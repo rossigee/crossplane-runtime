@@ -56,6 +56,9 @@ type ExternalListResult struct {
 // provider's external system. It is an optional interface; providers that do
 // not wish to support discovery may leave it unimplemented.
 //
+// The design is described in crossplane/crossplane#7867 (draft; not yet on the
+// crossplane-runtime main branch).
+//
 // Typical usage:
 //
 //	if lister, ok := externalClient.(ExternalLister); ok {
@@ -77,7 +80,9 @@ type ExternalLister interface {
 	// avoid overwhelming the external API.
 	//
 	// pageToken is empty on the first call, and contains the value from the
-	// previous call's result.NextPageToken on subsequent calls.
+	// previous call's result.NextPageToken on subsequent calls. Page tokens
+	// are opaque to callers. An implementation returns an error for a token
+	// it did not issue.
 	List(ctx context.Context, pc ProviderConfig, scope ExternalListScope, pageToken string) (ExternalListResult, error)
 }
 
@@ -97,5 +102,9 @@ type ExternalScopeLister interface {
 	// ListScopes enumerates the child scopes of parent. A nil or empty parent
 	// enumerates the top-level scopes. Hierarchies with more than one level are
 	// enumerated by calling ListScopes with a returned scope as the parent.
+	//
+	// Pagination follows the same rules as ExternalLister.List: callers invoke
+	// ListScopes again with NextPageToken until it is empty, and page tokens
+	// are opaque. Errors are returned to the caller unchanged.
 	ListScopes(ctx context.Context, pc ProviderConfig, parent ExternalListScope, pageToken string) (ExternalScopeListResult, error)
 }
